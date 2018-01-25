@@ -1,0 +1,153 @@
+NSIBLE COMMANDS
+
+	Installation
+----------------------------------------------------------------------------------------------------------------------------
+	Vagrant File -Installation
+----------------------------------------------------------------------------------------------------------------------------
+	Vagrant.configure("2") do |config|
+	
+	config.vm.define "ansible" do |ansible|
+	ansible.vm.box = "ubuntu/trusty64"
+    	ansible.vm.network "private_network", ip: "192.168.0.51"
+    	ansible.vm.hostname = "ansible"
+	end
+	config.vm.define "node1" do |node1|
+	node1.vm.box = "ubuntu/trusty64"
+    	node1.vm.network "private_network", ip: "192.168.0.52"
+    	node1.vm.hostname = "node1"
+	end
+
+	end
+-----------------------------------------------------------------------------------------------------------------------
+        vagrant up  //to up the two machines
+	vagrant ssh ansible //login ansible machine
+------------------------------------------------------------------------------------------------------------------------	
+	Ansibe Installation for ubuntu // In ansible machine
+        
+	sudo apt-get update
+	sudo apt-get install software-properties-common
+	sudo apt-add-repository ppa:ansible/ansible
+	sudo apt-get update
+	sudo apt-get install ansible
+------------------------------------------------------------------------------------------------------------------------
+	//In ansible machine
+
+	ssh-keygen
+	pwd  // it will be in a directory /home/vagrant
+	ls -la //to list hidden files and folders - it will show .ssh folder
+	cd .ssh  // changing the directory to .ssh - it will show generated private and public key
+	cat id_rsa.pub //copy the public key
+	(or)
+	vi id_rsa.pub //copy the public key
+
+	//In node machine
+	sudo -s //to obtain a admin rights or login through root user
+	cd /root  //change the directory to root folder
+	cd .ssh   //change the directory to hidden .ssh folder
+	ls        //to view the authorized_keys file
+	vi authorized_keys  //paste the key
+	
+	(or)
+	sudo -s
+	echo "ssh-rsa paste_the_key">/root/.ssh/authorized_keys
+	
+	// go back to ansible machine
+
+	vi hosts => add ip address => 192.168.0.52
+
+	ssh-agent bash
+	ssh-add .ssh/id_rsa // add the private key
+
+	ansible -i hosts -u root -m ping all
+
+-----------------------------------------------------------------------------------------------------------------------
+	//In ansible machine 
+
+	ls -lha /etc/ansible                     //to view the ansible core files
+	cp -R /etc/ansible myplatform            // copy the ansible core files into myplatform directory
+
+	cd myplatform 				// change the directory to myplatform
+	ls -lha					// confirm all the core files or copies to myplatform
+
+------------------------------------------------------------------------------------------------------------------
+
+
+	//In Ansible machine - Creating configuration in myplatform directory 
+
+	vi ansible.cfg
+	inventory = hosts                   //uncomment inventory and change the hosts path
+
+	vi hosts                             // open the hosts file in editor 
+	192.168.0.52                         // insert ip address of node1
+  
+	ansible -u root -m ping all
+	ansible -u root -m shell -a 'hostname' all
+	ansible -u root -m shell -a 'df-h' all
+	ansible -u root -m shell -a 'whoami' all
+ 
+ --------------------------------------------------------------------------------------
+	Creating Main.YML file
+        //change the directory to myplatform
+	
+	cd roles                 //change the directory to roles 
+	mkdir basic		// create a directory called basic
+	cd basic		//change directory to basic
+	mkdir tasks		// create a directory called tasks
+	cd tasks                //change the directory to tasks
+	vi main.yml             // create a main.yml file using vi editor
+
+	// In Main.Yml file - paste the below commands
+
+	- name: "Installing Vim"
+	apt: pkg=vim state=installed
+      
+      
+        (or)
+	
+	
+	// Multipe installaiton configuration -- // vi roles/basic/tasks/main.yml
+
+	- name: "Installing Vim"
+	  apt: pkg=vim state=installed
+
+	- name: "Installing DNS Utils"
+	  apt: pkg=dnsutils state=installed
+
+	- name: "Installing Vim"
+	  apt: pkg=git state=installed
+
+    	 Run => ansible playbook -K playbook.yml
+  
+  	  (or)
+
+	- name: "Installing additional software"
+    	  apt: pkg={{item}} state=installed
+          with_items:
+		- dnsutils
+		- git
+		- vim
+		- ntp
+		- at
+		- lvm2
+
+------------------------------------------------------------------------------------------------------------------------
+	// Go to myplatform directory or home directory - Create a playbook.yml
+	// it need to be created in myplatform directory
+
+	vi playbook.yml         // to create a new playbook.yml file using  vi editor
+	
+	//IN playbook.yml file -paste below commands
+	
+	---
+	- hosts: all
+	  become: true
+	  roles: 
+	   - basic
+  
+  
+	// Run playbook.yml using following command - verify you are in myplatform directory
+  
+	ansible-playbook -u root -s playbook.yml
+  
+	
+----------------------------------------------------------------------------
